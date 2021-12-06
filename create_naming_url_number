@@ -1,0 +1,35 @@
+def create_naming_url_number(path_to_folder):
+"""funzione per creare il DB riportante la corrispondenza tra numero iscrizione RUI, id presente nell'URL e nome"""
+    json_pattern = os.path.join(path_to_folder, '*.json')
+    ## salva tutti i file della cartella
+    files = glob.glob(json_pattern, recursive=True)
+    ## Genero una lista delle possibili chiavi del JSON che individuano i legami tra la società e il suo agente
+    df_list = []
+    dict_URL = {}
+    dict_registration_number = {}
+    not_found_list = []
+    for file in files:  ## ciclo tra i nomi dei file
+        with open(file, 'r') as f:
+            json_file = json.load(f)  # carica il singolo json file
+        for name, url in json_file.items(): #cerco la coppia chiave, valori che contiene nome e id_url
+            if len(url) == 1 and re.search('id',url[0]):## precedentemente questa condizione era legata al tipo di value (type(url) == list), ma a un certo punto ha smesso di funzionare
+                dict_URL[name] = url[0]
+
+        for denomination in config_file['denomination_types']: #creo un dizionario che contiene nome e codice IVASS
+            if denomination in json_file:
+                dict_registration_number[json_file.get(denomination)] = json_file.get(
+                    'Numero Iscrizione')
+                    
+   for name in dict_url.keys(): #il nome è la chiave di entrambi i dizionari, quindi cerco dove questi sono uguali.
+        if name in dict_registration_number.keys():
+            single_row_list = [name]
+            single_row_list.append(dict_url[name])
+            single_row_list.append(dict_registration_number[name])
+
+        else:
+            not_found_list.append(name)
+
+      df_list.append(single_row_list)
+    URL_df = pd.DataFrame.from_records(df_list)
+    URL_df.drop_duplicates()
+    URL_df.to_csv('Nominativo_URL.csv', sep=';',header=['nome', 'ID_URL', 'numero_iscrizione'])
